@@ -4,8 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f4ed">
-  <meta name="description" content="Một góc châm biếm về giấc mơ có tỷ phú buồn chán trả nợ giúp. Website mô phỏng, không giao dịch tiền thật.">
-  <title>Nợ Ơi! — Giấc mơ có thật… trên giao diện</title>
+  <meta name="description" content="Nợ Ơi! hướng tới xây dựng một cộng đồng tương trợ minh bạch: chia sẻ hoàn cảnh, xác minh thông tin và kết nối người cần giúp với người muốn hỗ trợ.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://ngockhanhyp.github.io/no-oi/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Nợ Ơi! — Cộng đồng tương trợ minh bạch">
+  <meta property="og:description" content="Một ý tưởng cộng đồng hỗ trợ nhau vượt qua khó khăn tài chính — đặt quyền riêng tư và minh bạch lên trước.">
+  <meta property="og:url" content="https://ngockhanhyp.github.io/no-oi/">
+  <title>Nợ Ơi! — Cộng đồng tương trợ minh bạch</title>
   <style>
     :root {
       color-scheme: light;
@@ -103,6 +109,17 @@
     .save-button { padding: 9px 12px; border: 0; border-radius: 999px; background: var(--green); color: white; font-size: 11px; font-weight: 800; }
     .save-button:hover { background: var(--green-dark); }
     .empty { grid-column: 1 / -1; padding: 38px; border: 1px dashed #c9c4b8; border-radius: 20px; color: var(--muted); text-align: center; }
+    .status-banner { margin-top: 20px; padding: 14px 18px; border: 1px solid #e8d7a8; border-radius: 14px; background: #fff9e8; color: #67552b; font-size: 13px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 30px 0 56px; }
+    .step { padding: 23px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+    .step-number { color: var(--green); font-size: 12px; font-weight: 850; letter-spacing: .12em; }
+    .step h3 { margin: 12px 0 7px; font-size: 18px; letter-spacing: -.03em; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; }
+    .policy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 56px; }
+    .policy-card { padding: 24px; border-radius: 18px; background: #ebe8dc; }
+    .policy-card h3 { margin: 0 0 8px; font-size: 18px; }
+    .policy-card p { margin: 0; color: #55594f; font-size: 13px; }
+    .disabled-button { opacity: .58; cursor: not-allowed; }
 
     .pitch {
       display: grid;
@@ -145,6 +162,7 @@
       .coin { width: 180px; height: 180px; font-size: 76px; }
       .sticker { display: none; }
       .feed { grid-template-columns: repeat(2, 1fr); }
+      .steps { grid-template-columns: 1fr; }
     }
     @media (max-width: 560px) {
       .wrap { width: min(100% - 28px, 1120px); }
@@ -161,6 +179,7 @@
       .section-heading { align-items: start; flex-direction: column; }
       .feed { grid-template-columns: 1fr; }
       .debt-card { min-height: 270px; }
+      .policy-grid { grid-template-columns: 1fr; }
       .pitch { grid-template-columns: 1fr; margin: 42px 0; padding: 23px; }
       .pitch .button { justify-self: start; }
       footer { flex-direction: column; gap: 5px; }
@@ -177,237 +196,86 @@
         <span class="brand-mark" aria-hidden="true">₫</span>
         <span>Nợ Ơi!</span>
       </a>
-      <span class="nav-note">Một ý tưởng nghiêm túc một cách không nghiêm túc.</span>
+      <nav class="nav-note" aria-label="Điều hướng">
+        <a href="#cach-hoat-dong">Cách hoạt động</a> · <a href="#an-toan">An toàn</a>
+      </nav>
     </div>
   </header>
 
   <main class="wrap">
     <section class="hero" aria-labelledby="hero-title">
       <div>
-        <p class="eyebrow">Giải pháp tài chính từ trí tưởng tượng</p>
-        <h1 id="hero-title">Bạn đăng nợ.<br>Tỷ phú hết buồn.</h1>
-        <p class="hero-copy">Một nơi để những khoản nợ được nhìn thấy — và để các tỷ phú đang chán có thêm thú vui mới: bấm nút “cứu tôi” trên mạng.</p>
+        <p class="eyebrow">Cộng đồng tương trợ minh bạch</p>
+        <h1 id="hero-title">Khi khó khăn,<br>đừng phải xoay xở một mình.</h1>
+        <p class="hero-copy">Nợ Ơi! hướng tới kết nối người đang cần hỗ trợ với những người sẵn lòng giúp — bằng thông tin rõ ràng, quyền riêng tư và sự tự nguyện.</p>
         <div class="hero-actions">
-          <button class="button button-light" id="open-form">＋ Đăng khoản nợ</button>
-          <a class="button button-quiet" href="#bang-tin">Đi xem ai đang cần</a>
+          <a class="button button-light" href="#bang-tin">Khám phá ý tưởng</a>
+          <a class="button button-quiet" href="#cach-hoat-dong">Cách tham gia</a>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
         <div class="coin">₫</div>
-        <span class="sticker">TỶ PHÚ ƠI, RẢNH KHÔNG?</span>
+        <span class="sticker">TỬ TẾ · TỰ NGUYỆN · MINH BẠCH</span>
       </div>
-    </section>
-
-    <section class="stats" aria-label="Thống kê minh họa">
-      <div class="stat"><span class="stat-label">Nợ đang chờ phép màu</span><strong class="stat-value" id="total-debt">—</strong></div>
-      <div class="stat"><span class="stat-label">Tỷ phú đã ghé xem</span><strong class="stat-value">0,5</strong></div>
-      <div class="stat"><span class="stat-label">Khoản đã được trả thật</span><strong class="stat-value">0 ₫</strong></div>
     </section>
 
     <section id="bang-tin" aria-labelledby="feed-title">
       <div class="section-heading">
         <div>
-          <h2 id="feed-title">Bảng tin cần phép màu</h2>
-          <p>Toàn bộ hồ sơ dưới đây là ví dụ hư cấu, không phải lời kêu gọi quyên góp.</p>
+          <h2 id="feed-title">Những lời kêu gọi hỗ trợ</h2>
+          <p>Chỉ nên hiển thị hồ sơ có sự đồng ý rõ ràng và đã được kiểm duyệt.</p>
         </div>
       </div>
-      <div class="feed" id="feed" aria-live="polite"></div>
+      <div class="feed">
+        <div class="empty">
+          <strong>Chưa có hồ sơ công khai.</strong><br>
+          Nợ Ơi! đang chuẩn bị quy trình xác minh, bảo vệ dữ liệu và kiểm duyệt trước khi nhận lời kêu gọi thật.
+        </div>
+      </div>
+      <p class="status-banner"><strong>Đang trong giai đoạn chuẩn bị.</strong> Chưa thể đăng hồ sơ, nhận quyên góp hay xác minh người kêu gọi trên website này. Đừng gửi số tài khoản hoặc giấy tờ cá nhân qua trang hiện tại.</p>
+    </section>
+
+    <section id="cach-hoat-dong" aria-labelledby="steps-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="steps-title">Cách Nợ Ơi! dự kiến hoạt động</h2>
+          <p>Đây là nguyên tắc thiết kế, chưa phải dịch vụ đang vận hành.</p>
+        </div>
+      </div>
+      <div class="steps">
+        <article class="step"><span class="step-number">01 — GỬI HỒ SƠ</span><h3>Chia sẻ vừa đủ</h3><p>Người cần giúp mô tả nhu cầu, số tiền và bằng chứng cần thiết; thông tin nhạy cảm không hiển thị công khai.</p></article>
+        <article class="step"><span class="step-number">02 — KIỂM DUYỆT</span><h3>Rà soát trước khi đăng</h3><p>Kiểm tra sự đồng ý, dấu hiệu giả mạo và cách bảo vệ người được nêu tên. Hồ sơ chưa xác minh không được trình bày như đã xác thực.</p></article>
+        <article class="step"><span class="step-number">03 — HỖ TRỢ TỰ NGUYỆN</span><h3>Người giúp tự quyết định</h3><p>Không hứa hẹn chắc chắn được giúp. Khoản tiền và việc chuyển tiền cần rõ ràng; người xem không bị ép xem quảng cáo hay bấm liên kết.</p></article>
+      </div>
+    </section>
+
+    <section id="an-toan" aria-labelledby="safety-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="safety-title">Niềm tin cần được bảo vệ</h2>
+          <p>Một nền tảng kêu gọi hỗ trợ phải bảo vệ cả người xin giúp lẫn người đóng góp.</p>
+        </div>
+      </div>
+      <div class="policy-grid">
+        <article class="policy-card"><h3>Không công khai số tài khoản tùy tiện</h3><p>Số tài khoản, giấy tờ và thông tin định danh cần có sự đồng ý, kiểm soát truy cập và quy trình gỡ bỏ. Người đóng góp nên xác minh người nhận bằng kênh độc lập.</p></article>
+        <article class="policy-card"><h3>Quảng cáo và tiếp thị phải tự nguyện</h3><p>Không bắt người dùng xem quảng cáo để đăng bài hoặc quyên góp. Quảng cáo và liên kết tiếp thị phải được ghi nhãn rõ, không gây nhầm lẫn hay chặn quyền tham gia.</p></article>
+      </div>
     </section>
 
     <section class="pitch">
       <div>
-        <h2>Đang có khoản nợ cần một cú bấm?</h2>
-        <p>Đăng thử một hồ sơ ẩn danh vào bảng tin mô phỏng. Dữ liệu chỉ nằm trong bộ nhớ của trang và sẽ biến mất khi tải lại.</p>
+        <h2>Muốn tham gia đợt thử nghiệm?</h2>
+        <p>Biểu mẫu và hồ sơ thật sẽ chỉ mở sau khi có nơi lưu trữ dữ liệu, kiểm duyệt, điều khoản sử dụng và quy trình xử lý yêu cầu xóa thông tin.</p>
       </div>
-      <button class="button button-green" id="open-form-bottom">Thử đăng hồ sơ ↗</button>
+      <span class="button button-green disabled-button" aria-disabled="true">Đăng hồ sơ — sắp mở</span>
     </section>
 
-    <p class="fine-print"><strong>Thông báo quan trọng (nhưng nói vui):</strong> Đây là website châm biếm/mô phỏng ý tưởng trong bài đăng. Không có tỷ phú nào đang duyệt hồ sơ, không có khoản nợ thật được công khai, không nhận quyên góp và không thực hiện giao dịch tài chính. Đừng nhập thông tin cá nhân, tài khoản ngân hàng hay dữ liệu nhạy cảm.</p>
+    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! hiện là trang giới thiệu ý tưởng, chưa phải nền tảng quyên góp. Trang này không nhận tiền, không xác minh hồ sơ và chưa hiển thị quảng cáo hay liên kết Shopee. Cần kiểm tra yêu cầu pháp lý, quyền riêng tư, điều khoản Google và chương trình tiếp thị liên kết trước khi triển khai các tính năng đó.</p>
   </main>
 
   <footer class="wrap">
-    <span>© Nợ Ơi! — giàu ý tưởng, nghèo tính năng chuyển khoản.</span>
-    <span>Không phải dịch vụ tài chính. Không phải lời khuyên tài chính.</span>
+    <span>© Nợ Ơi! — ý tưởng cộng đồng tương trợ minh bạch.</span>
+    <span>Chưa tiếp nhận hồ sơ hoặc quyên góp.</span>
   </footer>
-
-  <dialog id="debt-dialog" aria-labelledby="dialog-title">
-    <div class="dialog-inner">
-      <div class="dialog-head">
-        <div>
-          <h2 id="dialog-title">Đăng một khoản nợ</h2>
-          <p>Hồ sơ chỉ hiển thị trên trang này trong phiên hiện tại.</p>
-        </div>
-        <button class="close-button" id="close-form" aria-label="Đóng">×</button>
-      </div>
-      <form class="form" id="debt-form">
-        <label class="field">Tiêu đề khoản nợ
-          <input name="title" maxlength="64" required placeholder="Ví dụ: Học phí đang nhìn mình">
-        </label>
-        <label class="field">Số tiền (đồng)
-          <input name="amount" type="number" min="1" max="999999999999" step="1" required placeholder="5000000">
-        </label>
-        <label class="field">Kể một câu chuyện ngắn
-          <textarea name="description" maxlength="180" required placeholder="Không cần kể thông tin riêng tư nhé…"></textarea>
-        </label>
-        <label class="field">Tên gọi vui / ẩn danh
-          <input name="alias" maxlength="24" required placeholder="Ví dụ: Người đang chờ phép màu">
-        </label>
-        <p class="form-hint">Đừng nhập họ tên thật, số điện thoại, địa chỉ, số tài khoản hoặc thông tin nhận diện.</p>
-        <div class="form-actions">
-          <button class="button button-outline" id="cancel-form" type="button">Để sau</button>
-          <button class="button button-green" type="submit">Đăng thử hồ sơ</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-  <script>
-    const sampleDebts = [
-      {
-        title: "Học phí dí sát deadline",
-        amount: 12500000,
-        description: "Bài tập thì đã nộp, học phí thì vẫn đang ở trạng thái 'đang suy nghĩ'.",
-        alias: "Sinh viên hệ lạc quan",
-        tag: "Deadline dí",
-        emoji: "📚"
-      },
-      {
-        title: "Chiếc xe máy cần được giải cứu",
-        amount: 8400000,
-        description: "Xe vẫn chạy tốt. Chủ xe thì chạy trốn mỗi khi app ngân hàng gửi thông báo.",
-        alias: "Người bạn của chiếc xe",
-        tag: "Cần di chuyển",
-        emoji: "🛵"
-      },
-      {
-        title: "Tiền thuê nhà tháng này",
-        amount: 6500000,
-        description: "Đã thử thương lượng bằng ánh mắt cún con. Chủ nhà vẫn rất tỉnh táo.",
-        alias: "Hàng xóm tương lai",
-        tag: "Hơi cấp bách",
-        emoji: "🏠"
-      }
-    ];
-
-    const feed = document.querySelector("#feed");
-    const dialog = document.querySelector("#debt-dialog");
-    const form = document.querySelector("#debt-form");
-    const toast = document.querySelector("#toast");
-    const numberFormat = new Intl.NumberFormat("vi-VN");
-    let toastTimer;
-
-    function showToast(message) {
-      toast.textContent = message;
-      toast.classList.add("show");
-      window.clearTimeout(toastTimer);
-      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 3200);
-    }
-
-    function renderCard(debt, index) {
-      const article = document.createElement("article");
-      article.className = "debt-card";
-
-      const top = document.createElement("div");
-      top.className = "card-top";
-      const avatar = document.createElement("span");
-      avatar.className = "avatar";
-      avatar.setAttribute("aria-hidden", "true");
-      avatar.textContent = debt.emoji || "✨";
-      const tag = document.createElement("span");
-      tag.className = "tag";
-      tag.textContent = debt.tag || "Hồ sơ mới";
-      top.append(avatar, tag);
-
-      const title = document.createElement("h3");
-      title.textContent = debt.title;
-      const description = document.createElement("p");
-      description.className = "card-description";
-      description.textContent = debt.description;
-      const amount = document.createElement("div");
-      amount.className = "amount";
-      amount.textContent = numberFormat.format(debt.amount) + " ₫";
-      const amountNote = document.createElement("small");
-      amountNote.textContent = " · số tiền trong vũ trụ mô phỏng";
-      amount.append(amountNote);
-
-      const bottom = document.createElement("div");
-      bottom.className = "card-bottom";
-      const alias = document.createElement("span");
-      alias.className = "alias";
-      alias.textContent = "— " + debt.alias;
-      const button = document.createElement("button");
-      button.className = "save-button";
-      button.type = "button";
-      button.textContent = "Cứu tôi (mô phỏng)";
-      button.setAttribute("aria-label", "Mô phỏng việc cứu khoản nợ: " + debt.title);
-      button.addEventListener("click", () => showToast("Một tỷ phú tưởng tượng đã đọc hồ sơ này. Ví thật vẫn an toàn!"));
-      bottom.append(alias, button);
-      article.append(top, title, description, amount, bottom);
-      article.style.animationDelay = (index * 45) + "ms";
-      return article;
-    }
-
-    function updateTotal(debts) {
-      const total = debts.reduce((sum, debt) => sum + debt.amount, 0);
-      document.querySelector("#total-debt").textContent = numberFormat.format(total) + " ₫";
-    }
-
-    function renderFeed(debts) {
-      feed.replaceChildren();
-      if (!debts.length) {
-        const empty = document.createElement("p");
-        empty.className = "empty";
-        empty.textContent = "Chưa có hồ sơ nào. Phép màu đang khởi động...";
-        feed.append(empty);
-      } else {
-        debts.forEach((debt, index) => feed.append(renderCard(debt, index)));
-      }
-      updateTotal(debts);
-    }
-
-    function openDialog() {
-      dialog.showModal();
-      dialog.querySelector('input[name="title"]').focus();
-    }
-
-    document.querySelector("#open-form").addEventListener("click", openDialog);
-    document.querySelector("#open-form-bottom").addEventListener("click", openDialog);
-    document.querySelector("#close-form").addEventListener("click", () => dialog.close());
-    document.querySelector("#cancel-form").addEventListener("click", () => dialog.close());
-    dialog.addEventListener("click", (event) => {
-      if (event.target === dialog) dialog.close();
-    });
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (!form.reportValidity()) return;
-
-      const data = new FormData(form);
-      const debt = {
-        title: String(data.get("title")).trim(),
-        amount: Number(data.get("amount")),
-        description: String(data.get("description")).trim(),
-        alias: String(data.get("alias")).trim(),
-        tag: "Hồ sơ mới",
-        emoji: "✨"
-      };
-
-      if (!debt.title || !debt.description || !debt.alias || !Number.isSafeInteger(debt.amount) || debt.amount < 1) {
-        showToast("Kiểm tra lại thông tin nhé — số tiền phải là số nguyên dương.");
-        return;
-      }
-
-      sampleDebts.unshift(debt);
-      renderFeed(sampleDebts);
-      form.reset();
-      dialog.close();
-      showToast("Đã thêm vào bảng tin của phiên này. Tải lại trang là hồ sơ tự tan biến!");
-      document.querySelector("#bang-tin").scrollIntoView({ behavior: "smooth" });
-    });
-
-    renderFeed(sampleDebts);
-  </script>
 </body>
 </html>
