@@ -5,6 +5,7 @@ import worker from "../worker.js";
 class MockDatabase {
   campaigns = new Map();
   limits = new Map();
+  reports = new Map();
 
   prepare(query) {
     const database = this;
@@ -27,9 +28,25 @@ class MockDatabase {
           const campaign = database.campaigns.get(id);
           return campaign ? { delete_token_hash: campaign.delete_token_hash } : null;
         }
+        if (query.startsWith("SELECT id FROM campaigns WHERE id = ? AND status = 'approved'")) {
+          const [id] = values;
+          const campaign = database.campaigns.get(id);
+          return campaign?.status === "approved" ? { id } : null;
+        }
         return null;
       },
       async all() {
+        if (query.includes("FROM reports LEFT JOIN campaigns")) {
+          return {
+            results: [...database.reports.values()]
+              .filter((report) => report.status === "open")
+              .map((report) => ({
+                ...report,
+                title: database.campaigns.get(report.campaign_id)?.title || null,
+                campaign_status: database.campaigns.get(report.campaign_id)?.status || null
+              }))
+          };
+        }
         if (query.includes("WHERE status = 'pending'")) {
           return { results: [...database.campaigns.values()].filter((row) => row.status === "pending") };
         }
@@ -43,6 +60,18 @@ class MockDatabase {
         if (query.startsWith("INSERT INTO campaigns")) {
           const [id, title, description, amount, alias, bank_name, account_name, account_number, status, created_at, delete_token_hash] = values;
           database.campaigns.set(id, { id, title, description, amount, alias, bank_name, account_name, account_number, status, created_at, delete_token_hash });
+          return { meta: { changes: 1 } };
+        }
+        if (query.startsWith("INSERT INTO reports")) {
+          const [id, campaign_id, reason, created_at] = values;
+          database.reports.set(id, { id, campaign_id, reason, status: "open", created_at });
+          return { meta: { changes: 1 } };
+        }
+        if (query.startsWith("UPDATE reports")) {
+          const [id] = values;
+          const report = database.reports.get(id);
+          if (!report || report.status !== "open") return { meta: { changes: 0 } };
+          report.status = "resolved";
           return { meta: { changes: 1 } };
         }
         if (query.startsWith("SELECT delete_token_hash")) {
@@ -173,6 +202,46 @@ test("the API applies the hourly submission limit", async () => {
   assert.equal((await send()).status, 201);
   assert.equal((await send()).status, 201);
   assert.equal((await send()).status, 429);
+});
+
+test("public campaigns can be reported and appear in the private moderation queue", async () => {
+  const app = setup();
+  const created = await app.fetch(app.request(
+    "/api/campaigns",
+    "POST",
+    validSubmission,
+    { "CF-Connecting-IP": "203.0.113.14" }
+  ));
+  const submitted = await created.json();
+  await app.fetch(app.request(
+    `/api/admin/submissions/${submitted.id}/approve`,
+    "POST",
+    undefined,
+    { Authorization: "Bearer test-admin-secret" }
+  ));
+  const reported = await app.fetch(app.request(
+    "/api/reports",
+    "POST",
+    { campaignId: submitted.id, reason: "suspicious" },
+    { "CF-Connecting-IP": "203.0.113.15" }
+  ));
+  assert.equal(reported.status, 201);
+  const queue = await app.fetch(app.request(
+    "/api/admin/reports",
+    "GET",
+    undefined,
+    { Authorization: "Bearer test-admin-secret" }
+  ));
+  const reports = await queue.json();
+  assert.equal(reports.reports.length, 1);
+  assert.equal(reports.reports[0].campaign_id, submitted.id);
+  const resolved = await app.fetch(app.request(
+    `/api/admin/reports/${reports.reports[0].id}/resolve`,
+    "POST",
+    undefined,
+    { Authorization: "Bearer test-admin-secret" }
+  ));
+  assert.equal(resolved.status, 200);
 });
 
 test("admin moderation requires the secret token", async () => {

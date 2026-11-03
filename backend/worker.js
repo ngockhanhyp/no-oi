@@ -95,11 +95,11 @@ async function fingerprint(ip, secret) {
   return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function consumeSubmission(env, request, now) {
+async function consumeRateLimit(env, request, now, purpose, maxCount) {
   const ip = request.headers.get("CF-Connecting-IP");
   if (!ip || !env.RATE_LIMIT_SECRET) return false;
   const windowStart = Math.floor(now / 3_600_000) * 3_600_000;
-  const key = await fingerprint(ip, env.RATE_LIMIT_SECRET);
+  const key = await fingerprint(purpose + ":" + ip, env.RATE_LIMIT_SECRET);
   await env.DATABASE.prepare("DELETE FROM rate_limits WHERE window_start < ?")
     .bind(windowStart - 86_400_000)
     .run();
@@ -110,7 +110,7 @@ async function consumeSubmission(env, request, now) {
      DO UPDATE SET count = count + 1
      RETURNING count`
   ).bind(key, windowStart).first();
-  return result.count <= MAX_SUBMISSIONS_PER_HOUR;
+  return result.count <= maxCount;
 }
 
 function authorized(request, env) {
@@ -157,6 +157,25 @@ async function handleAdmin(request, env, url, origin) {
        ORDER BY created_at ASC LIMIT 100`
     ).all();
     return jsonResponse({ submissions: result.results || [] }, 200, origin, env);
+  }
+  if (request.method === "GET" && path === "/api/admin/reports") {
+    const result = await env.DATABASE.prepare(
+      `SELECT reports.id, reports.campaign_id, reports.reason, reports.created_at,
+              campaigns.title, campaigns.status AS campaign_status
+       FROM reports LEFT JOIN campaigns ON campaigns.id = reports.campaign_id
+       WHERE reports.status = 'open'
+       ORDER BY reports.created_at ASC LIMIT 100`
+    ).all();
+    return jsonResponse({ reports: result.results || [] }, 200, origin, env);
+  }
+
+  const reportMatch = path.match(/^\/api\/admin\/reports\/([0-9a-f-]{36})\/resolve$/i);
+  if (request.method === "POST" && reportMatch && CAMPAIGN_ID_PATTERN.test(reportMatch[1])) {
+    const result = await env.DATABASE.prepare(
+      "UPDATE reports SET status = 'resolved' WHERE id = ? AND status = 'open'"
+    ).bind(reportMatch[1]).run();
+    if (!result.meta?.changes) return jsonResponse({ error: "Không tìm thấy báo cáo đang mở." }, 404, origin, env);
+    return jsonResponse({ id: reportMatch[1], status: "resolved" }, 200, origin, env);
   }
 
   const match = path.match(/^\/api\/admin\/submissions\/([0-9a-f-]{36})\/(approve|reject)$/i);
@@ -223,6 +242,30 @@ export default {
         return await handleUserDeletion(request, env, url, origin);
       }
 
+      if (request.method === "POST" && url.pathname === "/api/reports") {
+        const parsed = await parseBody(request);
+        if (parsed.error) return jsonResponse({ error: parsed.error }, 400, origin, env);
+        const body = parsed.body;
+        if (!body || Object.keys(body).sort().join(",") !== "campaignId,reason" ||
+            typeof body.campaignId !== "string" ||
+            !CAMPAIGN_ID_PATTERN.test(body.campaignId) ||
+            !["suspicious", "privacy", "account"].includes(body.reason)) {
+          return jsonResponse({ error: "Thông tin báo cáo không hợp lệ." }, 400, origin, env);
+        }
+        const campaign = await env.DATABASE.prepare(
+          "SELECT id FROM campaigns WHERE id = ? AND status = 'approved'"
+        ).bind(body.campaignId).first();
+        if (!campaign) return jsonResponse({ error: "Không tìm thấy hồ sơ công khai." }, 404, origin, env);
+        if (!await consumeRateLimit(env, request, Date.now(), "report", 8)) {
+          return jsonResponse({ error: "Đã đạt giới hạn báo cáo. Vui lòng thử lại sau." }, 429, origin, env);
+        }
+        const id = crypto.randomUUID();
+        await env.DATABASE.prepare(
+          "INSERT INTO reports (id, campaign_id, reason, status, created_at) VALUES (?, ?, ?, 'open', ?)"
+        ).bind(id, body.campaignId, body.reason, new Date().toISOString()).run();
+        return jsonResponse({ id, status: "open", message: "Cảm ơn bạn đã gửi báo cáo." }, 201, origin, env);
+      }
+
       if (request.method === "GET" && url.pathname === "/api/health") {
         return jsonResponse({ status: "ok" }, 200, origin, env);
       }
@@ -243,7 +286,7 @@ export default {
         if (parsed.error) return jsonResponse({ error: parsed.error }, 400, origin, env);
         const validationError = validateCampaign(parsed.body);
         if (validationError) return jsonResponse({ error: validationError }, 400, origin, env);
-        if (!await consumeSubmission(env, request, Date.now())) {
+        if (!await consumeRateLimit(env, request, Date.now(), "submission", MAX_SUBMISSIONS_PER_HOUR)) {
           return jsonResponse({ error: "Đã đạt giới hạn gửi hồ sơ. Vui lòng thử lại sau." }, 429, origin, env);
         }
 
@@ -296,5 +339,16 @@ export default {
       console.error("API request failed:", error);
       return jsonResponse({ error: "Có lỗi khi xử lý yêu cầu. Vui lòng thử lại sau." }, 500, origin, env);
     }
+  },
+
+  async scheduled(_event, env, context) {
+    context.waitUntil(env.DATABASE.batch([
+      env.DATABASE.prepare(
+        "DELETE FROM campaigns WHERE (status = 'pending' AND julianday(created_at) < julianday('now', '-30 days')) OR (status != 'pending' AND julianday(created_at) < julianday('now', '-90 days'))"
+      ),
+      env.DATABASE.prepare("DELETE FROM reports WHERE julianday(created_at) < julianday('now', '-180 days')"),
+      env.DATABASE.prepare("DELETE FROM rate_limits WHERE window_start < ?")
+        .bind(Date.now() - 86_400_000)
+    ]));
   }
 };

@@ -239,8 +239,8 @@
     <section id="cach-hoat-dong" aria-labelledby="steps-title">
       <div class="section-heading">
         <div>
-          <h2 id="steps-title">Cách Nợ Ơi! dự kiến hoạt động</h2>
-          <p>Đây là nguyên tắc thiết kế, chưa phải dịch vụ đang vận hành.</p>
+          <h2 id="steps-title">Cách Nợ Ơi! hoạt động</h2>
+          <p>Hồ sơ được duyệt trước khi công khai; khoản hỗ trợ được chuyển trực tiếp đến người nhận.</p>
         </div>
       </div>
       <div class="steps">
@@ -265,18 +265,18 @@
 
     <section class="pitch">
       <div>
-        <h2>Muốn tham gia đợt thử nghiệm?</h2>
-        <p>Hồ sơ gửi lên sẽ chờ người quản trị kiểm duyệt trước khi xuất hiện công khai. Không nhập số tài khoản, thông tin liên lạc hay giấy tờ cá nhân.</p>
+        <h2>Đang cần cộng đồng hỗ trợ?</h2>
+        <p>Gửi lời kêu gọi để quản trị viên xem xét. Chỉ hồ sơ được duyệt mới xuất hiện công khai; thông tin tài khoản bạn đồng ý công khai sẽ được người xem nhìn thấy.</p>
       </div>
       <button class="button button-green disabled-button" id="open-form" type="button" disabled>Đang kết nối backend…</button>
     </section>
 
-    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! không giữ tiền; khoản hỗ trợ được chuyển trực tiếp đến tài khoản hiển thị. Việc duyệt chỉ là kiểm duyệt nội dung, không xác minh danh tính, tính xác thực của hoàn cảnh hay giao dịch. Người hỗ trợ cần tự xác nhận chủ tài khoản và cân nhắc trước khi chuyển tiền.</p>
+    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! không giữ tiền; khoản hỗ trợ được chuyển trực tiếp đến tài khoản hiển thị. Việc duyệt chỉ là kiểm duyệt nội dung, không xác minh danh tính, tính xác thực của hoàn cảnh hay giao dịch. Người hỗ trợ cần tự xác nhận chủ tài khoản và cân nhắc trước khi chuyển tiền. <a href="./terms.html">Đọc điều khoản</a> và <a href="./privacy.html">thông báo quyền riêng tư</a>.</p>
   </main>
 
   <footer class="wrap">
     <span>© Nợ Ơi! — ý tưởng cộng đồng tương trợ minh bạch.</span>
-    <span>Không giữ tiền quyên góp; hồ sơ chờ kiểm duyệt. · <a href="./admin.html" rel="nofollow">Quản trị</a></span>
+    <span><a href="./terms.html">Điều khoản</a> · <a href="./privacy.html">Quyền riêng tư</a> · <a href="./admin.html" rel="nofollow">Quản trị</a></span>
   </footer>
   <dialog id="submission-dialog" aria-labelledby="submission-title">
     <div class="dialog-inner">
@@ -392,7 +392,30 @@
           copy.textContent = "Không sao chép được";
         }
       });
-      donation.append(bank, accountName, account, copy);
+      const report = document.createElement("button");
+      report.className = "copy-button";
+      report.type = "button";
+      report.textContent = "Báo cáo hồ sơ";
+      report.addEventListener("click", async () => {
+        const choice = window.prompt("Chọn lý do báo cáo:\n1 — Nghi ngờ lừa đảo\n2 — Thông tin riêng tư bị lộ\n3 — Tài khoản không chính xác");
+        const reason = { "1": "suspicious", "2": "privacy", "3": "account" }[choice?.trim()];
+        if (!reason) return;
+        report.disabled = true;
+        try {
+          const response = await fetch(apiBase + "/api/reports", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ campaignId: campaign.id, reason })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Không gửi được báo cáo.");
+          report.textContent = "Đã nhận báo cáo";
+        } catch (error) {
+          report.disabled = false;
+          window.alert(error.message);
+        }
+      });
+      donation.append(bank, accountName, account, copy, report);
       card.append(top, title, description, amount, donation, bottom);
       return card;
     }

@@ -59,7 +59,10 @@
       <p class="notice" id="status" role="status">Mã chỉ được giữ trong bộ nhớ của trang hiện tại; không lưu vào trình duyệt.</p>
     </section>
 
+    <h2>Hồ sơ chờ duyệt</h2>
     <section id="submissions" aria-live="polite"></section>
+    <h2>Báo cáo từ cộng đồng</h2>
+    <section id="reports" aria-live="polite"></section>
     <p><a href="./">← Về trang chính</a></p>
   </main>
   <script>
@@ -67,6 +70,7 @@
     const tokenInput = document.querySelector("#token");
     const status = document.querySelector("#status");
     const submissions = document.querySelector("#submissions");
+    const reports = document.querySelector("#reports");
     let adminToken = "";
 
     async function api(path, options = {}) {
@@ -137,7 +141,9 @@
       status.textContent = "Đang tải hồ sơ...";
       try {
         const data = await api("/api/admin/submissions");
+        const reportData = await api("/api/admin/reports");
         submissions.replaceChildren();
+        reports.replaceChildren();
         if (data.submissions.length === 0) {
           const empty = document.createElement("p");
           empty.className = "panel empty";
@@ -146,10 +152,64 @@
         } else {
           data.submissions.forEach((item) => submissions.append(renderSubmission(item)));
         }
-        status.textContent = "Đang chờ duyệt: " + data.submissions.length + " hồ sơ.";
+        if (reportData.reports.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "panel empty";
+          empty.textContent = "Không có báo cáo mới.";
+          reports.append(empty);
+        } else {
+          reportData.reports.forEach((item) => {
+            const article = document.createElement("article");
+            article.className = "submission";
+            const title = document.createElement("h2");
+            title.textContent = item.title || "Hồ sơ đã bị xóa";
+            const reason = document.createElement("p");
+            const labels = { suspicious: "Nghi ngờ lừa đảo", privacy: "Lộ thông tin riêng tư", account: "Tài khoản không chính xác" };
+            reason.textContent = "Lý do: " + (labels[item.reason] || "Khác");
+            const state = document.createElement("p");
+            state.textContent = "Trạng thái hồ sơ: " + (item.campaign_status || "đã xóa");
+            const actions = document.createElement("div");
+            actions.className = "actions";
+            const dismiss = document.createElement("button");
+            dismiss.className = "secondary";
+            dismiss.textContent = "Đánh dấu đã xem";
+            dismiss.addEventListener("click", async () => {
+              dismiss.disabled = true;
+              try {
+                await api("/api/admin/reports/" + item.id + "/resolve", { method: "POST" });
+                await loadSubmissions();
+              } catch (error) {
+                status.textContent = error.message;
+                dismiss.disabled = false;
+              }
+            });
+            actions.append(dismiss);
+            if (item.campaign_status === "approved") {
+              const remove = document.createElement("button");
+              remove.className = "danger";
+              remove.textContent = "Gỡ hồ sơ công khai";
+              remove.addEventListener("click", async () => {
+                if (!confirm("Gỡ vĩnh viễn hồ sơ này và số tài khoản khỏi trang công khai?")) return;
+                remove.disabled = true;
+                try {
+                  await api("/api/admin/submissions/" + item.campaign_id, { method: "DELETE" });
+                  await loadSubmissions();
+                } catch (error) {
+                  status.textContent = error.message;
+                  remove.disabled = false;
+                }
+              });
+              actions.append(remove);
+            }
+            article.append(title, reason, state, actions);
+            reports.append(article);
+          });
+        }
+        status.textContent = "Chờ duyệt: " + data.submissions.length + " · báo cáo mới: " + reportData.reports.length;
       } catch (error) {
         status.textContent = error.message;
         submissions.replaceChildren();
+        reports.replaceChildren();
       }
     }
 
@@ -164,6 +224,7 @@
       adminToken = "";
       tokenInput.value = "";
       submissions.replaceChildren();
+      reports.replaceChildren();
       status.textContent = "Đã xóa mã khỏi bộ nhớ trang.";
     });
   </script>

@@ -9,3 +9,6 @@ ALLOWED_ORIGIN = "https://ngockhanhyp.github.io"
 binding = "DATABASE"
 database_name = "no-oi"
 database_id = "42866bbc-9808-40a3-a3ac-9b96b52840a0"
+
+[triggers]
+crons = ["17 3 * * *"]
