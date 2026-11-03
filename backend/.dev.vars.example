@@ -1,0 +1,2 @@
+ADMIN_API_TOKEN=replace-with-a-long-random-admin-secret
+RATE_LIMIT_SECRET=replace-with-a-different-long-random-secret

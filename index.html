@@ -7,6 +7,7 @@
   <meta name="description" content="Nợ Ơi! hướng tới xây dựng một cộng đồng tương trợ minh bạch: chia sẻ hoàn cảnh, xác minh thông tin và kết nối người cần giúp với người muốn hỗ trợ.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://ngockhanhyp.github.io/no-oi/">
+  <meta name="api-base-url" content="">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Nợ Ơi! — Cộng đồng tương trợ minh bạch">
   <meta property="og:description" content="Một ý tưởng cộng đồng hỗ trợ nhau vượt qua khó khăn tài chính — đặt quyền riêng tư và minh bạch lên trước.">
@@ -209,7 +210,7 @@
         <h1 id="hero-title">Khi khó khăn,<br>đừng phải xoay xở một mình.</h1>
         <p class="hero-copy">Nợ Ơi! hướng tới kết nối người đang cần hỗ trợ với những người sẵn lòng giúp — bằng thông tin rõ ràng, quyền riêng tư và sự tự nguyện.</p>
         <div class="hero-actions">
-          <a class="button button-light" href="#bang-tin">Khám phá ý tưởng</a>
+          <a class="button button-light" href="#bang-tin">Xem lời kêu gọi</a>
           <a class="button button-quiet" href="#cach-hoat-dong">Cách tham gia</a>
         </div>
       </div>
@@ -226,13 +227,10 @@
           <p>Chỉ nên hiển thị hồ sơ có sự đồng ý rõ ràng và đã được kiểm duyệt.</p>
         </div>
       </div>
-      <div class="feed">
-        <div class="empty">
-          <strong>Chưa có hồ sơ công khai.</strong><br>
-          Nợ Ơi! đang chuẩn bị quy trình xác minh, bảo vệ dữ liệu và kiểm duyệt trước khi nhận lời kêu gọi thật.
-        </div>
+      <div class="feed" id="feed" aria-live="polite">
+        <div class="empty">Đang tải lời kêu gọi...</div>
       </div>
-      <p class="status-banner"><strong>Đang trong giai đoạn chuẩn bị.</strong> Chưa thể đăng hồ sơ, nhận quyên góp hay xác minh người kêu gọi trên website này. Đừng gửi số tài khoản hoặc giấy tờ cá nhân qua trang hiện tại.</p>
+      <p class="status-banner" id="api-status" role="status"><strong>Đang kiểm tra kết nối.</strong></p>
     </section>
 
     <section id="cach-hoat-dong" aria-labelledby="steps-title">
@@ -265,17 +263,174 @@
     <section class="pitch">
       <div>
         <h2>Muốn tham gia đợt thử nghiệm?</h2>
-        <p>Biểu mẫu và hồ sơ thật sẽ chỉ mở sau khi có nơi lưu trữ dữ liệu, kiểm duyệt, điều khoản sử dụng và quy trình xử lý yêu cầu xóa thông tin.</p>
+        <p>Hồ sơ gửi lên sẽ chờ người quản trị kiểm duyệt trước khi xuất hiện công khai. Không nhập số tài khoản, thông tin liên lạc hay giấy tờ cá nhân.</p>
       </div>
-      <span class="button button-green disabled-button" aria-disabled="true">Đăng hồ sơ — sắp mở</span>
+      <button class="button button-green disabled-button" id="open-form" type="button" disabled>Đang kết nối backend…</button>
     </section>
 
-    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! hiện là trang giới thiệu ý tưởng, chưa phải nền tảng quyên góp. Trang này không nhận tiền, không xác minh hồ sơ và chưa hiển thị quảng cáo hay liên kết Shopee. Cần kiểm tra yêu cầu pháp lý, quyền riêng tư, điều khoản Google và chương trình tiếp thị liên kết trước khi triển khai các tính năng đó.</p>
+    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! không giữ tiền và không xác nhận hồ sơ đã được xác minh danh tính. Hồ sơ được duyệt chỉ có nghĩa là đã qua kiểm duyệt nội dung trước khi đăng. Người hỗ trợ cần tự kiểm tra trước khi chuyển tiền.</p>
   </main>
 
   <footer class="wrap">
     <span>© Nợ Ơi! — ý tưởng cộng đồng tương trợ minh bạch.</span>
-    <span>Chưa tiếp nhận hồ sơ hoặc quyên góp.</span>
+    <span>Không giữ tiền quyên góp; hồ sơ chờ kiểm duyệt.</span>
   </footer>
+  <dialog id="submission-dialog" aria-labelledby="submission-title">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <div>
+          <h2 id="submission-title">Gửi lời kêu gọi hỗ trợ</h2>
+          <p>Hồ sơ sẽ ở trạng thái chờ duyệt trước khi công khai.</p>
+        </div>
+        <button class="close-button" id="close-form" type="button" aria-label="Đóng">×</button>
+      </div>
+      <form class="form" id="submission-form">
+        <label class="field">Tiêu đề
+          <input name="title" minlength="5" maxlength="80" required placeholder="Ví dụ: Cần hỗ trợ chi phí học tập">
+        </label>
+        <label class="field">Số tiền cần hỗ trợ (đồng)
+          <input name="amount" type="number" min="1" max="1000000000" step="1" required>
+        </label>
+        <label class="field">Hoàn cảnh (20–500 ký tự)
+          <textarea name="description" minlength="20" maxlength="500" required placeholder="Chỉ chia sẻ thông tin bạn đồng ý công khai. Không nhập số điện thoại, email, số tài khoản hay giấy tờ."></textarea>
+        </label>
+        <label class="field">Tên hiển thị / bí danh
+          <input name="alias" minlength="2" maxlength="40" required placeholder="Không dùng họ tên thật">
+        </label>
+        <p class="form-hint">Không có chỗ nhập thông tin liên hệ hoặc tài khoản ngân hàng. Hồ sơ bị từ chối nếu có dữ liệu nhạy cảm.</p>
+        <label class="form-hint"><input name="consent" type="checkbox" required> Tôi đồng ý để nội dung trên được lưu để kiểm duyệt và công khai nếu được duyệt.</label>
+        <div class="form-actions">
+          <button class="button button-outline" id="cancel-form" type="button">Hủy</button>
+          <button class="button button-green" id="submit-form" type="submit">Gửi để kiểm duyệt</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+  <script>
+    const apiSetting = document.querySelector('meta[name="api-base-url"]').content.trim();
+    const apiBase = apiSetting.replace(/\/+$/, "");
+    const feed = document.querySelector("#feed");
+    const status = document.querySelector("#api-status");
+    const openForm = document.querySelector("#open-form");
+    const dialog = document.querySelector("#submission-dialog");
+    const form = document.querySelector("#submission-form");
+    const submitButton = document.querySelector("#submit-form");
+    const money = new Intl.NumberFormat("vi-VN");
+
+    function showFeedMessage(message) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = message;
+      feed.replaceChildren(empty);
+    }
+
+    function renderCampaign(campaign) {
+      const card = document.createElement("article");
+      card.className = "debt-card";
+      const top = document.createElement("div");
+      top.className = "card-top";
+      const icon = document.createElement("span");
+      icon.className = "avatar";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = "🤝";
+      const label = document.createElement("span");
+      label.className = "tag";
+      label.textContent = "Đã duyệt nội dung";
+      top.append(icon, label);
+      const title = document.createElement("h3");
+      title.textContent = campaign.title;
+      const description = document.createElement("p");
+      description.className = "card-description";
+      description.textContent = campaign.description;
+      const amount = document.createElement("div");
+      amount.className = "amount";
+      amount.textContent = money.format(campaign.amount) + " ₫";
+      const note = document.createElement("small");
+      note.textContent = " · số tiền được đề nghị";
+      amount.append(note);
+      const bottom = document.createElement("div");
+      bottom.className = "card-bottom";
+      const alias = document.createElement("span");
+      alias.className = "alias";
+      alias.textContent = "— " + campaign.alias;
+      bottom.append(alias);
+      card.append(top, title, description, amount, bottom);
+      return card;
+    }
+
+    async function loadCampaigns() {
+      if (!apiBase) {
+        status.innerHTML = "<strong>Backend chưa được kết nối.</strong> Chưa thể gửi hồ sơ hoặc tải lời kêu gọi.";
+        openForm.textContent = "Backend chưa kết nối";
+        openForm.disabled = true;
+        showFeedMessage("Chưa có hồ sơ công khai. Backend chưa được cấu hình.");
+        return;
+      }
+
+      try {
+        const response = await fetch(apiBase + "/api/campaigns", { headers: { Accept: "application/json" } });
+        if (!response.ok) throw new Error("API unavailable");
+        const data = await response.json();
+        status.innerHTML = "<strong>Đang hoạt động.</strong> Hồ sơ mới cần được kiểm duyệt trước khi xuất hiện.";
+        openForm.textContent = "＋ Gửi hồ sơ";
+        openForm.disabled = false;
+        openForm.classList.remove("disabled-button");
+        if (!Array.isArray(data.campaigns) || data.campaigns.length === 0) {
+          showFeedMessage("Chưa có lời kêu gọi nào được duyệt.");
+          return;
+        }
+        feed.replaceChildren(...data.campaigns.map(renderCampaign));
+      } catch {
+        status.innerHTML = "<strong>Chưa kết nối được backend.</strong> Không gửi hoặc lưu hồ sơ lúc này.";
+        openForm.textContent = "Backend tạm thời không khả dụng";
+        openForm.disabled = true;
+        showFeedMessage("Không tải được lời kêu gọi. Vui lòng thử lại sau.");
+      }
+    }
+
+    openForm.addEventListener("click", () => dialog.showModal());
+    document.querySelector("#close-form").addEventListener("click", () => dialog.close());
+    document.querySelector("#cancel-form").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!apiBase || !form.reportValidity()) return;
+      submitButton.disabled = true;
+      submitButton.textContent = "Đang gửi…";
+      const formData = new FormData(form);
+      const submission = {
+        title: String(formData.get("title")).trim(),
+        description: String(formData.get("description")).trim(),
+        amount: Number(formData.get("amount")),
+        alias: String(formData.get("alias")).trim(),
+        consent: formData.get("consent") === "on"
+      };
+      try {
+        const response = await fetch(apiBase + "/api/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(submission)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Không thể gửi hồ sơ.");
+        dialog.close();
+        form.reset();
+        status.innerHTML = "<strong>Đã nhận hồ sơ để kiểm duyệt.</strong> Hồ sơ chưa công khai.";
+        alert("Đã gửi hồ sơ để kiểm duyệt. Mã hồ sơ: " + result.id +
+          "\n\nMã xóa (chỉ hiển thị một lần): " + result.deleteToken +
+          "\nHãy lưu riêng mã này; ai có mã cũng có thể xóa hồ sơ của bạn.");
+      } catch (error) {
+        alert(error.message || "Không gửi được hồ sơ. Vui lòng thử lại.");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Gửi để kiểm duyệt";
+      }
+    });
+
+    loadCampaigns();
+  </script>
 </body>
 </html>
