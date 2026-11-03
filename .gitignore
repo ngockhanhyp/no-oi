@@ -1,4 +1,5 @@
 /.wrangler/
 backend/.dev.vars
+backend/admin-token.txt
 backend/.wrangler/
 backend/node_modules/

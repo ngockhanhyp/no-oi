@@ -7,7 +7,7 @@
   <meta name="description" content="Nợ Ơi! hướng tới xây dựng một cộng đồng tương trợ minh bạch: chia sẻ hoàn cảnh, xác minh thông tin và kết nối người cần giúp với người muốn hỗ trợ.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://ngockhanhyp.github.io/no-oi/">
-  <meta name="api-base-url" content="">
+  <meta name="api-base-url" content="https://no-oi-api.ngockhanhyp.workers.dev">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Nợ Ơi! — Cộng đồng tương trợ minh bạch">
   <meta property="og:description" content="Một ý tưởng cộng đồng hỗ trợ nhau vượt qua khó khăn tài chính — đặt quyền riêng tư và minh bạch lên trước.">
@@ -106,6 +106,9 @@
     .amount { margin-top: auto; padding-top: 22px; font-size: 25px; font-weight: 850; letter-spacing: -.045em; }
     .amount small { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: 0; }
     .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .donation-details { display: grid; gap: 9px; margin-top: 16px; padding: 14px; border-radius: 12px; background: #f0f3e8; font-size: 13px; }
+    .donation-details strong { overflow-wrap: anywhere; }
+    .copy-button { justify-self: start; padding: 8px 11px; border: 1px solid #cbd6be; border-radius: 999px; background: #fffefa; color: var(--green-dark); font-size: 12px; font-weight: 750; }
     .alias { color: var(--muted); font-size: 12px; }
     .save-button { padding: 9px 12px; border: 0; border-radius: 999px; background: var(--green); color: white; font-size: 11px; font-weight: 800; }
     .save-button:hover { background: var(--green-dark); }
@@ -224,7 +227,7 @@
       <div class="section-heading">
         <div>
           <h2 id="feed-title">Những lời kêu gọi hỗ trợ</h2>
-          <p>Chỉ nên hiển thị hồ sơ có sự đồng ý rõ ràng và đã được kiểm duyệt.</p>
+          <p>Hồ sơ được kiểm duyệt nội dung trước khi công khai. Thông tin người nhận chưa được xác minh.</p>
         </div>
       </div>
       <div class="feed" id="feed" aria-live="polite">
@@ -268,12 +271,12 @@
       <button class="button button-green disabled-button" id="open-form" type="button" disabled>Đang kết nối backend…</button>
     </section>
 
-    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! không giữ tiền và không xác nhận hồ sơ đã được xác minh danh tính. Hồ sơ được duyệt chỉ có nghĩa là đã qua kiểm duyệt nội dung trước khi đăng. Người hỗ trợ cần tự kiểm tra trước khi chuyển tiền.</p>
+    <p class="fine-print"><strong>Minh bạch:</strong> Nợ Ơi! không giữ tiền; khoản hỗ trợ được chuyển trực tiếp đến tài khoản hiển thị. Việc duyệt chỉ là kiểm duyệt nội dung, không xác minh danh tính, tính xác thực của hoàn cảnh hay giao dịch. Người hỗ trợ cần tự xác nhận chủ tài khoản và cân nhắc trước khi chuyển tiền.</p>
   </main>
 
   <footer class="wrap">
     <span>© Nợ Ơi! — ý tưởng cộng đồng tương trợ minh bạch.</span>
-    <span>Không giữ tiền quyên góp; hồ sơ chờ kiểm duyệt.</span>
+    <span>Không giữ tiền quyên góp; hồ sơ chờ kiểm duyệt. · <a href="./admin.html" rel="nofollow">Quản trị</a></span>
   </footer>
   <dialog id="submission-dialog" aria-labelledby="submission-title">
     <div class="dialog-inner">
@@ -294,11 +297,20 @@
         <label class="field">Hoàn cảnh (20–500 ký tự)
           <textarea name="description" minlength="20" maxlength="500" required placeholder="Chỉ chia sẻ thông tin bạn đồng ý công khai. Không nhập số điện thoại, email, số tài khoản hay giấy tờ."></textarea>
         </label>
-        <label class="field">Tên hiển thị / bí danh
-          <input name="alias" minlength="2" maxlength="40" required placeholder="Không dùng họ tên thật">
+        <label class="field">Tên hiển thị
+          <input name="alias" minlength="2" maxlength="40" required placeholder="Tên/bí danh sẽ hiện công khai">
         </label>
-        <p class="form-hint">Không có chỗ nhập thông tin liên hệ hoặc tài khoản ngân hàng. Hồ sơ bị từ chối nếu có dữ liệu nhạy cảm.</p>
-        <label class="form-hint"><input name="consent" type="checkbox" required> Tôi đồng ý để nội dung trên được lưu để kiểm duyệt và công khai nếu được duyệt.</label>
+        <label class="field">Ngân hàng
+          <input name="bankName" minlength="2" maxlength="50" required placeholder="Tên ngân hàng">
+        </label>
+        <label class="field">Tên chủ tài khoản
+          <input name="accountName" minlength="2" maxlength="80" required placeholder="Đúng như đăng ký tại ngân hàng">
+        </label>
+        <label class="field">Số tài khoản
+          <input name="accountNumber" inputmode="numeric" minlength="6" maxlength="20" pattern="[0-9]{6,20}" required placeholder="Chỉ nhập chữ số">
+        </label>
+        <p class="form-hint">Ngân hàng, tên chủ tài khoản và số tài khoản sẽ công khai nếu hồ sơ được duyệt. Không nhập thẻ, mật khẩu, mã OTP, số điện thoại, email hay giấy tờ.</p>
+        <label class="form-hint"><input name="consent" type="checkbox" required> Tôi là chủ tài khoản hoặc được ủy quyền, và đồng ý công khai các thông tin trên để nhận hỗ trợ. Tôi hiểu Nợ Ơi! không xác minh danh tính hay bảo đảm quyên góp.</label>
         <div class="form-actions">
           <button class="button button-outline" id="cancel-form" type="button">Hủy</button>
           <button class="button button-green" id="submit-form" type="submit">Gửi để kiểm duyệt</button>
@@ -335,7 +347,7 @@
       icon.textContent = "🤝";
       const label = document.createElement("span");
       label.className = "tag";
-      label.textContent = "Đã duyệt nội dung";
+      label.textContent = "Đã duyệt nội dung · chưa xác minh";
       top.append(icon, label);
       const title = document.createElement("h3");
       title.textContent = campaign.title;
@@ -354,7 +366,34 @@
       alias.className = "alias";
       alias.textContent = "— " + campaign.alias;
       bottom.append(alias);
-      card.append(top, title, description, amount, bottom);
+      const donation = document.createElement("div");
+      donation.className = "donation-details";
+      const bank = document.createElement("span");
+      bank.textContent = "Ngân hàng: " + campaign.bank_name;
+      const accountName = document.createElement("span");
+      accountName.textContent = "Chủ tài khoản: ";
+      const accountNameValue = document.createElement("strong");
+      accountNameValue.textContent = campaign.account_name;
+      accountName.append(accountNameValue);
+      const account = document.createElement("span");
+      account.textContent = "Số tài khoản: ";
+      const accountValue = document.createElement("strong");
+      accountValue.textContent = campaign.account_number;
+      account.append(accountValue);
+      const copy = document.createElement("button");
+      copy.className = "copy-button";
+      copy.type = "button";
+      copy.textContent = "Sao chép số tài khoản";
+      copy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(campaign.account_number);
+          copy.textContent = "Đã sao chép";
+        } catch {
+          copy.textContent = "Không sao chép được";
+        }
+      });
+      donation.append(bank, accountName, account, copy);
+      card.append(top, title, description, amount, donation, bottom);
       return card;
     }
 
@@ -372,7 +411,7 @@
         if (!response.ok) throw new Error("API unavailable");
         const data = await response.json();
         status.innerHTML = "<strong>Đang hoạt động.</strong> Hồ sơ mới cần được kiểm duyệt trước khi xuất hiện.";
-        openForm.textContent = "＋ Gửi hồ sơ";
+        openForm.textContent = "＋ Gửi lời kêu gọi";
         openForm.disabled = false;
         openForm.classList.remove("disabled-button");
         if (!Array.isArray(data.campaigns) || data.campaigns.length === 0) {
@@ -406,6 +445,9 @@
         description: String(formData.get("description")).trim(),
         amount: Number(formData.get("amount")),
         alias: String(formData.get("alias")).trim(),
+        bankName: String(formData.get("bankName")).trim(),
+        accountName: String(formData.get("accountName")).trim(),
+        accountNumber: String(formData.get("accountNumber")).trim(),
         consent: formData.get("consent") === "on"
       };
       try {

@@ -40,12 +40,15 @@ function hasPrivateData(value) {
 function validCampaign(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
   const keys = Object.keys(body).sort().join(",");
-  if (keys !== "alias,amount,consent,description,title") return false;
+  if (keys !== "accountName,accountNumber,alias,amount,bankName,consent,description,title") return false;
   return typeof body.consent === "boolean" &&
     body.consent === true &&
     typeof body.title === "string" &&
     typeof body.description === "string" &&
     typeof body.alias === "string" &&
+    typeof body.bankName === "string" &&
+    typeof body.accountName === "string" &&
+    typeof body.accountNumber === "string" &&
     Number.isSafeInteger(body.amount) &&
     body.amount > 0 &&
     body.amount <= 1_000_000_000;
@@ -65,11 +68,17 @@ function validateCampaign(body) {
   const title = cleanText(body.title);
   const description = cleanText(body.description);
   const alias = cleanText(body.alias);
+  const bankName = cleanText(body.bankName);
+  const accountName = cleanText(body.accountName);
+  const accountNumber = cleanText(body.accountNumber);
   if (title.length < 5 || title.length > 80) return "Tiêu đề cần dài từ 5 đến 80 ký tự.";
   if (description.length < 20 || description.length > 500) return "Mô tả cần dài từ 20 đến 500 ký tự.";
   if (alias.length < 2 || alias.length > 40) return "Tên hiển thị cần dài từ 2 đến 40 ký tự.";
-  if ([title, description, alias].some(hasPrivateData)) {
-    return "Không gửi email, số điện thoại, số tài khoản hoặc dãy số định danh.";
+  if (bankName.length < 2 || bankName.length > 50) return "Vui lòng kiểm tra tên ngân hàng.";
+  if (accountName.length < 2 || accountName.length > 80) return "Vui lòng kiểm tra tên chủ tài khoản.";
+  if (!/^[0-9]{6,20}$/.test(accountNumber)) return "Số tài khoản cần có từ 6 đến 20 chữ số.";
+  if ([title, description, alias, bankName, accountName].some(hasPrivateData)) {
+    return "Không gửi email, số điện thoại hoặc dãy số định danh trong phần mô tả.";
   }
   return null;
 }
@@ -105,10 +114,10 @@ async function consumeSubmission(env, request, now) {
 }
 
 function authorized(request, env) {
-  const expected = env.ADMIN_API_TOKEN;
+  const expected = env.ADMIN_API_TOKEN?.trim() || "";
   const provided = request.headers.get("Authorization") || "";
   if (!expected || !provided.startsWith("Bearer ")) return false;
-  const token = provided.slice(7);
+  const token = provided.slice(7).trim();
   let mismatch = token.length ^ expected.length;
   const length = Math.max(token.length, expected.length);
   for (let index = 0; index < length; index += 1) {
@@ -142,7 +151,8 @@ async function handleAdmin(request, env, url, origin) {
   const path = url.pathname;
   if (request.method === "GET" && path === "/api/admin/submissions") {
     const result = await env.DATABASE.prepare(
-      `SELECT id, title, description, amount, alias, status, created_at
+      `SELECT id, title, description, amount, alias, bank_name, account_name,
+              account_number, status, created_at
        FROM campaigns WHERE status = 'pending'
        ORDER BY created_at ASC LIMIT 100`
     ).all();
@@ -218,7 +228,8 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/api/campaigns") {
         const result = await env.DATABASE.prepare(
-          `SELECT id, title, description, amount, alias, created_at
+          `SELECT id, title, description, amount, alias, bank_name, account_name,
+                  account_number, created_at
            FROM campaigns WHERE status = 'approved'
            ORDER BY created_at DESC LIMIT ?`
         ).bind(MAX_CAMPAIGNS_PER_PAGE).all();
@@ -242,6 +253,9 @@ export default {
           description: cleanText(parsed.body.description),
           amount: parsed.body.amount,
           alias: cleanText(parsed.body.alias),
+          bank_name: cleanText(parsed.body.bankName),
+          account_name: cleanText(parsed.body.accountName),
+          account_number: cleanText(parsed.body.accountNumber),
           status: "pending",
           created_at: new Date().toISOString(),
           delete_token: crypto.randomUUID()
@@ -249,14 +263,18 @@ export default {
         campaign.delete_token_hash = await hashToken(campaign.delete_token);
         await env.DATABASE.prepare(
           `INSERT INTO campaigns
-           (id, title, description, amount, alias, status, created_at, delete_token_hash)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+           (id, title, description, amount, alias, bank_name, account_name, account_number,
+            status, created_at, delete_token_hash)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
           campaign.id,
           campaign.title,
           campaign.description,
           campaign.amount,
           campaign.alias,
+          campaign.bank_name,
+          campaign.account_name,
+          campaign.account_number,
           campaign.status,
           campaign.created_at,
           campaign.delete_token_hash

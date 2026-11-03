@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="api-base-url" content="https://no-oi-api.ngockhanhyp.workers.dev">
+  <meta name="theme-color" content="#f7f4ed">
+  <title>Quản trị hồ sơ — Nợ Ơi!</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #24281f;
+      --muted: #6f7469;
+      --paper: #f7f4ed;
+      --card: #fffefa;
+      --green: #245c43;
+      --line: #e7e3d8;
+      --orange: #e6875c;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: system-ui, sans-serif; line-height: 1.5; }
+    main { width: min(900px, calc(100% - 32px)); margin: 36px auto; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 42px); letter-spacing: -.05em; }
+    .lead { color: var(--muted); }
+    .panel, .submission { margin-top: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+    .form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+    label { display: grid; flex: 1 1 300px; gap: 6px; font-size: 13px; font-weight: 700; }
+    input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+    button { min-height: 42px; padding: 9px 14px; border: 0; border-radius: 10px; background: var(--green); color: white; font: inherit; font-weight: 750; cursor: pointer; }
+    button.secondary { background: #e8eee1; color: var(--ink); }
+    button.danger { background: #a53d2f; }
+    button:disabled { opacity: .5; cursor: wait; }
+    .notice { margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .warning { padding: 14px; border-left: 3px solid var(--orange); border-radius: 0 10px 10px 0; background: #fff8f1; color: #765b4a; font-size: 13px; }
+    .submission h2 { margin: 0 0 8px; font-size: 20px; }
+    .submission p { margin: 7px 0; }
+    .details { display: grid; gap: 5px; margin: 14px 0; padding: 13px; border-radius: 10px; background: #f0f3e8; overflow-wrap: anywhere; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .empty { color: var(--muted); }
+    a { color: var(--green); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Quản trị Nợ Ơi!</h1>
+    <p class="lead">Duyệt nội dung trước khi công khai. Đường dẫn này không được quảng bá nhưng không thay thế bảo mật: hãy giữ mã quản trị bí mật và chỉ đăng nhập trên thiết bị tin cậy.</p>
+    <p class="warning"><strong>Quy trình duyệt:</strong> xác nhận người gửi đồng ý công khai số tài khoản, kiểm tra nội dung không chứa thông tin liên lạc/OTP/giấy tờ, và không coi việc duyệt nội dung là xác minh danh tính hay bảo đảm câu chuyện có thật.</p>
+
+    <section class="panel">
+      <form class="form" id="login-form">
+        <label>Mã quản trị
+          <input id="token" type="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Tải hồ sơ chờ duyệt</button>
+        <button type="button" class="secondary" id="logout">Xóa mã khỏi trang</button>
+      </form>
+      <p class="notice" id="status" role="status">Mã chỉ được giữ trong bộ nhớ của trang hiện tại; không lưu vào trình duyệt.</p>
+    </section>
+
+    <section id="submissions" aria-live="polite"></section>
+    <p><a href="./">← Về trang chính</a></p>
+  </main>
+  <script>
+    const apiBase = document.querySelector('meta[name="api-base-url"]').content.replace(/\/+$/, "");
+    const tokenInput = document.querySelector("#token");
+    const status = document.querySelector("#status");
+    const submissions = document.querySelector("#submissions");
+    let adminToken = "";
+
+    async function api(path, options = {}) {
+      const response = await fetch(apiBase + path, {
+        ...options,
+        headers: {
+          Accept: "application/json",
+          Authorization: "Bearer " + adminToken,
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...options.headers
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Yêu cầu thất bại.");
+      return data;
+    }
+
+    function renderSubmission(item) {
+      const article = document.createElement("article");
+      article.className = "submission";
+      const title = document.createElement("h2");
+      title.textContent = item.title;
+      const description = document.createElement("p");
+      description.textContent = item.description;
+      const amount = document.createElement("p");
+      amount.textContent = "Số tiền đề nghị: " + new Intl.NumberFormat("vi-VN").format(item.amount) + " ₫";
+      const alias = document.createElement("p");
+      alias.textContent = "Tên hiển thị: " + item.alias;
+      const bank = document.createElement("div");
+      bank.className = "details";
+      const bankName = document.createElement("span");
+      bankName.textContent = "Ngân hàng: " + item.bank_name;
+      const accountName = document.createElement("span");
+      accountName.textContent = "Chủ tài khoản: " + item.account_name;
+      const accountNumber = document.createElement("span");
+      accountNumber.textContent = "Số tài khoản: " + item.account_number;
+      bank.append(bankName, accountName, accountNumber);
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      for (const [label, action, className] of [
+        ["Duyệt công khai", "approve", ""],
+        ["Từ chối", "reject", "secondary"],
+        ["Xóa vĩnh viễn", "delete", "danger"]
+      ]) {
+        const button = document.createElement("button");
+        button.textContent = label;
+        if (className) button.className = className;
+        button.addEventListener("click", async () => {
+          if (action === "delete" && !confirm("Xóa vĩnh viễn hồ sơ này?")) return;
+          button.disabled = true;
+          try {
+            const method = action === "delete" ? "DELETE" : "POST";
+            await api("/api/admin/submissions/" + item.id + (action === "delete" ? "" : "/" + action), { method });
+            await loadSubmissions();
+          } catch (error) {
+            status.textContent = error.message;
+            button.disabled = false;
+          }
+        });
+        actions.append(button);
+      }
+      article.append(title, description, amount, alias, bank, actions);
+      return article;
+    }
+
+    async function loadSubmissions() {
+      if (!adminToken) return;
+      status.textContent = "Đang tải hồ sơ...";
+      try {
+        const data = await api("/api/admin/submissions");
+        submissions.replaceChildren();
+        if (data.submissions.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "panel empty";
+          empty.textContent = "Không có hồ sơ nào đang chờ duyệt.";
+          submissions.append(empty);
+        } else {
+          data.submissions.forEach((item) => submissions.append(renderSubmission(item)));
+        }
+        status.textContent = "Đang chờ duyệt: " + data.submissions.length + " hồ sơ.";
+      } catch (error) {
+        status.textContent = error.message;
+        submissions.replaceChildren();
+      }
+    }
+
+    document.querySelector("#login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      adminToken = tokenInput.value.trim();
+      tokenInput.value = "";
+      await loadSubmissions();
+    });
+
+    document.querySelector("#logout").addEventListener("click", () => {
+      adminToken = "";
+      tokenInput.value = "";
+      submissions.replaceChildren();
+      status.textContent = "Đã xóa mã khỏi bộ nhớ trang.";
+    });
+  </script>
+</body>
+</html>

@@ -8,5 +8,4 @@ ALLOWED_ORIGIN = "https://ngockhanhyp.github.io"
 [[d1_databases]]
 binding = "DATABASE"
 database_name = "no-oi"
-# Replace this placeholder with the ID printed by `npx wrangler d1 create no-oi`.
-database_id = "00000000000000000000000000000000"
+database_id = "42866bbc-9808-40a3-a3ac-9b96b52840a0"

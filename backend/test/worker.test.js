@@ -41,8 +41,8 @@ class MockDatabase {
       async run() {
         if (query.startsWith("DELETE FROM rate_limits")) return { meta: { changes: 0 } };
         if (query.startsWith("INSERT INTO campaigns")) {
-          const [id, title, description, amount, alias, status, created_at, delete_token_hash] = values;
-          database.campaigns.set(id, { id, title, description, amount, alias, status, created_at, delete_token_hash });
+          const [id, title, description, amount, alias, bank_name, account_name, account_number, status, created_at, delete_token_hash] = values;
+          database.campaigns.set(id, { id, title, description, amount, alias, bank_name, account_name, account_number, status, created_at, delete_token_hash });
           return { meta: { changes: 1 } };
         }
         if (query.startsWith("SELECT delete_token_hash")) {
@@ -91,6 +91,9 @@ const validSubmission = {
   description: "Gia đình gặp khó khăn và cần hỗ trợ học phí kỳ này.",
   amount: 5_000_000,
   alias: "Bạn sinh viên",
+  bankName: "Ngân hàng mẫu",
+  accountName: "NGUYEN VAN A",
+  accountNumber: "123456789012",
   consent: true
 };
 
@@ -114,7 +117,9 @@ test("submissions are pending and excluded from public feed until approved", asy
   );
   assert.equal((await app.fetch(moderation)).status, 200);
   const publicAfter = await app.fetch(app.request("/api/campaigns"));
-  assert.equal((await publicAfter.json()).campaigns[0].id, pending.id);
+  const approved = await publicAfter.json();
+  assert.equal(approved.campaigns[0].id, pending.id);
+  assert.equal(approved.campaigns[0].account_number, "123456789012");
 });
 
 test("submitters can delete their own pending record with the one-time token", async () => {
